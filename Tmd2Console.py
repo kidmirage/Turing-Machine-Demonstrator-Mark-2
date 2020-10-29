@@ -1,6 +1,4 @@
 import pygame
-import time
-from _tracemalloc import start
 
 # Initialize the PyGame environment.
 pygame.init()
@@ -1311,10 +1309,8 @@ while not done:
         # Show the play button in running mode.
         pygame.display.flip()
         
-        start = time.time()
+        # Run the optimized state machine.
         result = runFast()
-        end = time.time()
-        print(end - start)
         if result == 'E':
             showStateTableError()
         haltStateMachine()
