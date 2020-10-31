@@ -495,6 +495,14 @@ def pushButtonPlay(_):
     else:
         playPressed = True
 
+# Pop up a dialog with the error message from the exception passed.    
+def showErrorMessage(ex):
+    msg = str(ex)
+    index = msg.index(']')+1
+    msg = msg[index:len(msg)]
+    dialog = Dialog(screen, 'Error', msg, ['OK'], panelLabelFont, False)
+    dialog.run()  
+
 # Handle the load label button mouse press.
 def pushButtonLoad(_):
     global stateTable
@@ -532,8 +540,8 @@ def pushButtonLoad(_):
                 drawPanelLabel(state, step, True)
             
         except Exception as ex:
-            dialog = Dialog(screen, 'Error ['+ str(type(ex)) +']', 'File [' + filename + '] could not be loaded.', ['OK'], panelLabelFont, False)
-            dialog.run()
+            showErrorMessage(ex)
+            
             
             # Clear the events queue.
             pygame.event.clear()
@@ -624,9 +632,10 @@ def pushButtonSave(_):
             f.close()
             
             showButton(saveButton)
+            
         except Exception as ex:
-            dialog = Dialog(screen, 'Error ['+ str(type(ex)) + ']', 'File [' + filename + '] could not be saved.', ['OK'], panelLabelFont, False)
-            dialog.run()
+            showErrorMessage(ex)
+            
 
 # Handle the step radio button mouse press.            
 def pushButtonStep(button):
