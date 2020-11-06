@@ -6,7 +6,7 @@ pygame.init()
 #Set a periodic timer for demo mode.
 TIMEREVENT = pygame.USEREVENT+1
 pygame.time.set_timer(TIMEREVENT, 1000)
-pygame.key.set_repeat(1,300)
+pygame.key.set_repeat(1000,100)
 
 ##### Globals
 # Read symbols '0' - '4' are immutable. An end symbol 'b' can however be substituted for the '5' symbol.
