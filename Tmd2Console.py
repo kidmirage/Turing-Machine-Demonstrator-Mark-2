@@ -676,8 +676,6 @@ def pushButtonRun(button):
                 button["imageLight"] = radioHighlightImage
                 showButton(button)
         runState = 'RUN'
-        resetPanelLabels()
-        redrawStateTable()
 
 # Handle the demo radio button mouse press.     
 def pushButtonDemo(button):
@@ -936,6 +934,11 @@ def runFast():
     global currentStep
     global lastMoveDirection
     
+    # Clear the state table of highlights.
+    resetPanelLabels()
+    redrawStateTable()
+    pygame.display.flip()
+    
     # Check halt button for mouse over.
     buttons = []
     buttons.append(haltButton)
@@ -983,6 +986,9 @@ def runFast():
                 currentStep = 'MOVE'
                 return 'H'
         
+        # Record the last move direction.
+        lastMoveDirection = currentTransition[2]
+                        
         # Goto. Set the new state.
         if currentTransition[3] == 'H':
             currentStep = 'GOTO'
@@ -1315,15 +1321,19 @@ while not done:
     
     # If RUN use the optimized method. 
     if runState == 'RUN':
-        # Show the play button in running mode.
-        pygame.display.flip()
+        if currentStep == 'READ':
+            
+            # Run the optimized state machine.
+            result = runFast()
+            if result == 'E':
+                showStateTableError()
+            haltStateMachine()
+            continue
+        else:
+            # Run fast is expecting the current step to be READ. Synchronize!
+            stepReady = True
+            playPressed = True
         
-        # Run the optimized state machine.
-        result = runFast()
-        if result == 'E':
-            showStateTableError()
-        haltStateMachine()
-        continue
             
     # Read.
     if currentStep == 'READ':
