@@ -1,12 +1,18 @@
 import pygame
 
+hasCamera = False
+
+if hasCamera:
+    import camera
+    import ocr
+
 # Initialize the PyGame environment.
 pygame.init()
 
 #Set a periodic timer for demo mode.
 TIMEREVENT = pygame.USEREVENT+1
 pygame.time.set_timer(TIMEREVENT, 1000)
-pygame.key.set_repeat(1000,100)
+pygame.key.set_repeat(1,300)
 
 ##### Globals
 # Read symbols '0' - '4' are immutable. An end symbol 'b' can however be substituted for the '5' symbol.
@@ -73,7 +79,7 @@ DARK_PURPLE = 200, 0, 200
 
 # Screen constants.
 SCREEN_SIZE = SCREEN_WIDTH,SCREEN_HEIGHT = 800, 480
-SCREEN_ATTRIBUTES =  5 #pygame.FULLSCREEN
+SCREEN_ATTRIBUTES = 5 #pygame.FULLSCREEN
 
 # Set to full screen for a Raspberry Pi 7" display. 
 screen = pygame.display.set_mode(SCREEN_SIZE, SCREEN_ATTRIBUTES)
@@ -158,7 +164,9 @@ panelCellSymbols = {
     'F_':panelCellFont.render('F', True, PURPLE, WHITE),
     'H_':panelCellFont.render('H', True, PURPLE, WHITE),
     ' ':panelCellFont.render('   ', True, BLACK, WHITE),
-    ' _':panelCellFont.render('   ', True, BLACK, WHITE)
+    ' _':panelCellFont.render('   ', True, BLACK, WHITE),
+    '?':panelCellFont.render('?', True, BLACK, WHITE),
+    '?_':panelCellFont.render('?', True, PURPLE, WHITE)
     }
 
 # Cache the panel label symbols and positions needed.
@@ -173,6 +181,7 @@ panelLabelSymbols = {
     'DEMO':panelLabelFont.render('DEMO', True, BLACK, WHITE),
     'LOAD':panelLabelFont.render('LOAD', True, DARK_PURPLE, WHITE),
     'SAVE':panelLabelFont.render('SAVE', True, DARK_PURPLE, WHITE),
+    'SCAN':panelLabelFont.render('SCAN', True, DARK_PURPLE, WHITE),
     'READ_':panelLabelFont.render('READ', True, PURPLE, WHITE),
     'WRITE_':panelLabelFont.render('WRITE', True, PURPLE, WHITE),
     'MOVE_':panelLabelFont.render('MOVE', True, PURPLE, WHITE),
@@ -181,7 +190,8 @@ panelLabelSymbols = {
     'RUN_':panelLabelFont.render('RUN', True, PURPLE, WHITE),
     'DEMO_':panelLabelFont.render('DEMO', True, PURPLE, WHITE),
     'LOAD_':panelLabelFont.render('LOAD', True, PURPLE, WHITE),
-    'SAVE_':panelLabelFont.render('SAVE', True, PURPLE, WHITE)
+    'SAVE_':panelLabelFont.render('SAVE', True, PURPLE, WHITE),
+    'SCAN_':panelLabelFont.render('SCAN', True, PURPLE, WHITE)
     }
 ##### Function and classes.
 # Implement a generic dialog box.
@@ -326,7 +336,7 @@ class Dialog(pygame.sprite.Sprite):
         else:
             return buttonClicked
         
-# Used to setup the tape screen controls.
+# Used to setup the screen controls.
 def createButton(name, button, image, imageLight, position, callback):
     button["name"] = name
     button["image"] = image
@@ -604,6 +614,10 @@ def dumpWorkspace():
         workspace += '\n'
     return workspace
 
+if hasCamera:
+    def pushButtonScan(_):
+        scanTable()
+
 # Handle the save label button mouse press.
 def pushButtonSave(_):
     global stateTable
@@ -676,6 +690,8 @@ def pushButtonRun(button):
                 button["imageLight"] = radioHighlightImage
                 showButton(button)
         runState = 'RUN'
+        resetPanelLabels()
+        redrawStateTable()
 
 # Handle the demo radio button mouse press.     
 def pushButtonDemo(button):
@@ -934,11 +950,6 @@ def runFast():
     global currentStep
     global lastMoveDirection
     
-    # Clear the state table of highlights.
-    resetPanelLabels()
-    redrawStateTable()
-    pygame.display.flip()
-    
     # Check halt button for mouse over.
     buttons = []
     buttons.append(haltButton)
@@ -986,9 +997,6 @@ def runFast():
                 currentStep = 'MOVE'
                 return 'H'
         
-        # Record the last move direction.
-        lastMoveDirection = currentTransition[2]
-                        
         # Goto. Set the new state.
         if currentTransition[3] == 'H':
             currentStep = 'GOTO'
@@ -999,7 +1007,8 @@ def runFast():
         # Periodically check for mouse events.
         loops += 1;
         if loops % 100000 == 0:
-            # See if the halt button needs to be highlighted.
+                
+            # See if any button needs to be highlighted.
             if checkForMouseovers(buttons):
                 pygame.display.flip()
             
@@ -1010,6 +1019,52 @@ def runFast():
                     currentStep = 'READ'
                     return 'H'
 
+
+if hasCamera:
+    # Call the camera module to take a picture and scan for the transition table values.
+    def scanTable():
+        saveScreen = screen.copy()
+        result = camera.getImageStateTable(screen)
+        screen.blit(saveScreen, (0,0))
+        
+        if result:
+            clearStateTable()
+            redrawStateTable()
+            pygame.display.flip()
+            
+            # Copy the OCR values into the state table.
+            for state in ('A', 'B', 'C', 'D','E','F'):
+                for row in range(0, 4):
+                    for col in range(0,6):
+                        # Skip the first 5 values in row 0.
+                        if row == 0 and col < 5:
+                            continue
+                        value = ocr.nextCellValue()
+                        changed = False
+                        # Do some sanity checks on the values coming in.
+                        if row == 0 and not value in readSymbols:
+                            # Default value for first row last column.
+                            value = '5'
+                        elif row == 1 and not value in writeSymbols:
+                            value = '?'
+                            changed = True
+                        elif row == 2 and not value in moveSymbols:
+                            value = '?'
+                            changed = True
+                        elif row == 3 and not value in gotoSymbols:
+                            value = '?'
+                            changed = True
+                        if not changed:
+                            stateTable[state+str(col)][row] = value
+                        drawStateSymbol(state, row+1, col, value, changed)
+                        pygame.display.flip()
+                        
+                        # Check for user exit.                       
+                        for event in pygame.event.get():
+                            if event.type == pygame.KEYDOWN:
+                                return
+                
+    
 ##### Screen setup.          
 # Draw the tape frame.
 tapeBorder = pygame.Rect(TAPE_START_X, TAPE_START_Y, TAPE_WIDTH, TAPE_HEIGHT)
@@ -1110,13 +1165,23 @@ buttons.append(loadButton)
 # Save.
 saveImage = panelLabelSymbols['SAVE']
 saveHighlightImage = panelLabelSymbols['SAVE_']
-buttonWidth, buttonHeight = saveImage.get_rect().size
+saveButtonWidth, buttonHeight = saveImage.get_rect().size
 saveButton = {}
 createButton("save", saveButton, saveImage, saveHighlightImage, 
               (loadbuttonWidth + 40, 20), pushButtonSave)
 showButton(saveButton)
 buttons.append(saveButton)
 
+if hasCamera:
+    # Scan.
+    scanImage = panelLabelSymbols['SCAN']
+    scanHighlightImage = panelLabelSymbols['SCAN_']
+    buttonWidth, buttonHeight = scanImage.get_rect().size
+    scanButton = {}
+    createButton("scan", scanButton, scanImage, scanHighlightImage, 
+                  (loadbuttonWidth + saveButtonWidth + 60, 20), pushButtonScan)
+    showButton(scanButton)
+    buttons.append(scanButton)
 
 # Find the center of the step/run/demo "button" area. 
 imageButtonWidth = playbuttonWidth   # NOTE: using play button dimensions.
@@ -1216,6 +1281,8 @@ while not done:
             buttonOnClick(demoButton, event)
             buttonOnClick(loadButton, event)
             buttonOnClick(saveButton, event)
+            if hasCamera:
+                buttonOnClick(scanButton, event)
        
             # Do not allow the tape of state cells to be modified while running.
             if not stateMachineRunning:
@@ -1321,19 +1388,14 @@ while not done:
     
     # If RUN use the optimized method. 
     if runState == 'RUN':
-        if currentStep == 'READ':
-            
-            # Run the optimized state machine.
-            result = runFast()
-            if result == 'E':
-                showStateTableError()
-            haltStateMachine()
-            continue
-        else:
-            # Run fast is expecting the current step to be READ. Synchronize!
-            stepReady = True
-            playPressed = True
+        # Show the play button in running mode.
+        pygame.display.flip()
         
+        # Run the optimized state machine.
+        if runFast() == 'E':
+            showStateTableError()
+        haltStateMachine()
+        continue
             
     # Read.
     if currentStep == 'READ':
