@@ -1,10 +1,8 @@
 import pygame
 
 hasCamera = False
-
-if hasCamera:
-    import camera
-    import ocr
+#import camera
+#import ocr
 
 # Initialize the PyGame environment.
 pygame.init()
@@ -79,7 +77,10 @@ DARK_PURPLE = 200, 0, 200
 
 # Screen constants.
 SCREEN_SIZE = SCREEN_WIDTH,SCREEN_HEIGHT = 800, 480
-SCREEN_ATTRIBUTES = 5 #pygame.FULLSCREEN
+if hasCamera:
+    SCREEN_ATTRIBUTES = pygame.FULLSCREEN
+else:
+    SCREEN_ATTRIBUTES = pygame.RESIZABLE
 
 # Set to full screen for a Raspberry Pi 7" display. 
 screen = pygame.display.set_mode(SCREEN_SIZE, SCREEN_ATTRIBUTES)

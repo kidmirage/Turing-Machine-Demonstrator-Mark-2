@@ -6,7 +6,7 @@ from picamera import PiCamera
 
 pygame.init()
 
-debug = False
+debug = True
 
 # Screen constants.
 SCREEN_SIZE = SCREEN_WIDTH,SCREEN_HEIGHT = 800, 480
@@ -109,7 +109,7 @@ def showButton(screen, button, highlight=False):
         button["highlighted"] = False
 
 # Process the image of the finite state table.
-def readValues(imageScale, boundingBox, imageX, imageY):
+def readValues(imageScale, boundingBox, imageX, imageY, screen):
     image = cv2.imread('stateTable.jpg')
     scale = 1/imageScale
     topLeftX = int(boundingBox['topLeft'][0]*scale-imageX*scale)
@@ -119,7 +119,7 @@ def readValues(imageScale, boundingBox, imageX, imageY):
     cropped = image[topLeftY:bottomRightY, topLeftX:bottomRightX]
     if debug:
         cv2.imwrite('1 cropped.png', cropped)
-    ocr.doOCR(cropped)
+    ocr.doOCR(cropped, screen, boundingBox)
 
 # Have the user outline the state transition table.
 def getImageStateTable(screen):
@@ -234,7 +234,7 @@ def getImageStateTable(screen):
                     return False
                 
                 if buttonOnClick(startButton, event):
-                    readValues(imageScale, boundingBox, imageX, imageY)
+                    readValues(imageScale, boundingBox, imageX, imageY, screen)
                     return True
                 
                 if buttonOnClick(refreshButton, event):
