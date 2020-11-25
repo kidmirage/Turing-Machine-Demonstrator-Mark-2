@@ -309,9 +309,10 @@ class Dialog(pygame.sprite.Sprite):
                         if self.textBoxRect.collidepoint(event.pos):
                             vkeybd = virtualKeyboard.VirtualKeyboard(screen)
                             result = vkeybd.run(self.text)
-                            if result != None:
+                            if result != None and len(result) > 0:
                                 self.text = result
                                 self.update()
+                            
                     for button in dialogButtons:
                         if buttonOnClick(button, event):
                             buttonClicked = button['name']
@@ -521,8 +522,11 @@ def pushButtonPlay(_):
 # Pop up a dialog with the error message from the exception passed.    
 def showErrorMessage(ex):
     msg = str(ex)
-    index = msg.index(']')+1
-    msg = msg[index:len(msg)]
+    try:
+        index = msg.index(']')+1
+        msg = msg[index:len(msg)]
+    except Exception:
+        pass
     dialog = Dialog(screen, 'Error', msg, ['OK'], panelLabelFont, False)
     dialog.run()  
 

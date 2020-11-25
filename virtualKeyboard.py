@@ -93,9 +93,6 @@ class VirtualKeyboard():
 
 
     def run(self, text=''):
-        
-        # Want to ignore the click that invoked this dialog.
-        ignoreClick = True
 
         self.text = text
         # create an input text box
