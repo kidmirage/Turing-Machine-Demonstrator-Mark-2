@@ -1,8 +1,10 @@
 import pygame
 
-hasCamera = False
-#import camera
-#import ocr
+hasCamera = True
+
+if hasCamera:
+    import camera
+    import ocr
 
 # Initialize the PyGame environment.
 pygame.init()
@@ -77,10 +79,7 @@ DARK_PURPLE = 200, 0, 200
 
 # Screen constants.
 SCREEN_SIZE = SCREEN_WIDTH,SCREEN_HEIGHT = 800, 480
-if hasCamera:
-    SCREEN_ATTRIBUTES = pygame.FULLSCREEN
-else:
-    SCREEN_ATTRIBUTES = pygame.RESIZABLE
+SCREEN_ATTRIBUTES = pygame.FULLSCREEN
 
 # Set to full screen for a Raspberry Pi 7" display. 
 screen = pygame.display.set_mode(SCREEN_SIZE, SCREEN_ATTRIBUTES)
@@ -982,6 +981,7 @@ def runFast():
             # Cannot go past a boundary.
             currentStep = 'MOVE'
             return 'H'
+        lastMoveDirection = currentTransition[2]
         
         if currentTransition[2] != 'R':
             if tapeHead < RIGHT_STOP:
