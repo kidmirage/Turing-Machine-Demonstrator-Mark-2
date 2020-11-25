@@ -1,6 +1,7 @@
 import pygame
+import virtualKeyboard
 
-hasCamera = True
+hasCamera = False
 
 if hasCamera:
     import camera
@@ -79,7 +80,10 @@ DARK_PURPLE = 200, 0, 200
 
 # Screen constants.
 SCREEN_SIZE = SCREEN_WIDTH,SCREEN_HEIGHT = 800, 480
-SCREEN_ATTRIBUTES = pygame.FULLSCREEN
+if hasCamera:
+    SCREEN_ATTRIBUTES = pygame.FULLSCREEN
+else:
+    SCREEN_ATTRIBUTES = pygame.RESIZABLE
 
 # Set to full screen for a Raspberry Pi 7" display. 
 screen = pygame.display.set_mode(SCREEN_SIZE, SCREEN_ATTRIBUTES)
@@ -206,6 +210,7 @@ class Dialog(pygame.sprite.Sprite):
         self.font = font
         self.textBox = textBox
         self.cursor = self.font.render('_    ', True, DARK_PURPLE, WHITE)
+        self.textBoxRect = None
         
     def update(self):
         if self.textBox:
@@ -257,6 +262,7 @@ class Dialog(pygame.sprite.Sprite):
             textX = int(panelWidth*.2/2)
             textY = int(panelHeight/2)
             pygame.draw.rect(self.panel, PURPLE, (textX, textY, textWidth, textHeight), 2)
+            self.textBoxRect = pygame.Rect(textX+self.panelX, textY+self.panelY, textWidth, textHeight)
             self.text=lastFilename
             self.textX = textX + 10
             self.textY = textY + 5 
@@ -299,6 +305,13 @@ class Dialog(pygame.sprite.Sprite):
             # Check the event queue. 
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.textBox != None:
+                        if self.textBoxRect.collidepoint(event.pos):
+                            vkeybd = virtualKeyboard.VirtualKeyboard(screen)
+                            result = vkeybd.run(self.text)
+                            if result != None:
+                                self.text = result
+                                self.update()
                     for button in dialogButtons:
                         if buttonOnClick(button, event):
                             buttonClicked = button['name']
@@ -981,7 +994,6 @@ def runFast():
             # Cannot go past a boundary.
             currentStep = 'MOVE'
             return 'H'
-        lastMoveDirection = currentTransition[2]
         
         if currentTransition[2] != 'R':
             if tapeHead < RIGHT_STOP:
