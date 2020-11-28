@@ -80,10 +80,7 @@ DARK_PURPLE = 200, 0, 200
 
 # Screen constants.
 SCREEN_SIZE = SCREEN_WIDTH,SCREEN_HEIGHT = 800, 480
-if hasCamera:
-    SCREEN_ATTRIBUTES = pygame.FULLSCREEN
-else:
-    SCREEN_ATTRIBUTES = pygame.RESIZABLE
+SCREEN_ATTRIBUTES = pygame.FULLSCREEN
 
 # Set to full screen for a Raspberry Pi 7" display. 
 screen = pygame.display.set_mode(SCREEN_SIZE, SCREEN_ATTRIBUTES)
@@ -186,6 +183,7 @@ panelLabelSymbols = {
     'LOAD':panelLabelFont.render('LOAD', True, DARK_PURPLE, WHITE),
     'SAVE':panelLabelFont.render('SAVE', True, DARK_PURPLE, WHITE),
     'SCAN':panelLabelFont.render('SCAN', True, DARK_PURPLE, WHITE),
+    'EXIT':panelLabelFont.render('X', True, DARK_PURPLE, WHITE),
     'READ_':panelLabelFont.render('READ', True, PURPLE, WHITE),
     'WRITE_':panelLabelFont.render('WRITE', True, PURPLE, WHITE),
     'MOVE_':panelLabelFont.render('MOVE', True, PURPLE, WHITE),
@@ -195,7 +193,8 @@ panelLabelSymbols = {
     'DEMO_':panelLabelFont.render('DEMO', True, PURPLE, WHITE),
     'LOAD_':panelLabelFont.render('LOAD', True, PURPLE, WHITE),
     'SAVE_':panelLabelFont.render('SAVE', True, PURPLE, WHITE),
-    'SCAN_':panelLabelFont.render('SCAN', True, PURPLE, WHITE)
+    'SCAN_':panelLabelFont.render('SCAN', True, PURPLE, WHITE),
+    'EXIT_':panelLabelFont.render('X', True, PURPLE, WHITE)
     }
 ##### Function and classes.
 # Implement a generic dialog box.
@@ -309,10 +308,9 @@ class Dialog(pygame.sprite.Sprite):
                         if self.textBoxRect.collidepoint(event.pos):
                             vkeybd = virtualKeyboard.VirtualKeyboard(screen)
                             result = vkeybd.run(self.text)
-                            if result != None and len(result) > 0:
+                            if result != None:
                                 self.text = result
                                 self.update()
-                            
                     for button in dialogButtons:
                         if buttonOnClick(button, event):
                             buttonClicked = button['name']
@@ -522,11 +520,8 @@ def pushButtonPlay(_):
 # Pop up a dialog with the error message from the exception passed.    
 def showErrorMessage(ex):
     msg = str(ex)
-    try:
-        index = msg.index(']')+1
-        msg = msg[index:len(msg)]
-    except Exception:
-        pass
+    index = msg.index(']')+1
+    msg = msg[index:len(msg)]
     dialog = Dialog(screen, 'Error', msg, ['OK'], panelLabelFont, False)
     dialog.run()  
 
@@ -666,7 +661,12 @@ def pushButtonSave(_):
             
         except Exception as ex:
             showErrorMessage(ex)
-            
+
+# Handle the exit label button mouse press.
+def pushButtonExit(_):
+    global done
+    pygame.quit()
+    done = True
 
 # Handle the step radio button mouse press.            
 def pushButtonStep(button):
@@ -1189,6 +1189,16 @@ createButton("save", saveButton, saveImage, saveHighlightImage,
 showButton(saveButton)
 buttons.append(saveButton)
 
+# Exit.
+exitImage = panelLabelSymbols['EXIT']
+exitHighlightImage = panelLabelSymbols['EXIT_']
+exitButtonWidth, buttonHeight = exitImage.get_rect().size
+exitButton = {}
+createButton("exit", exitButton, exitImage, exitHighlightImage, 
+              (SCREEN_WIDTH - 20, 10), pushButtonExit)
+showButton(exitButton)
+buttons.append(exitButton)
+
 if hasCamera:
     # Scan.
     scanImage = panelLabelSymbols['SCAN']
@@ -1298,6 +1308,7 @@ while not done:
             buttonOnClick(demoButton, event)
             buttonOnClick(loadButton, event)
             buttonOnClick(saveButton, event)
+            buttonOnClick(exitButton, event)
             if hasCamera:
                 buttonOnClick(scanButton, event)
        
